@@ -63,7 +63,7 @@ class Total
 						name = {:value=>one[:name], :hyperlink=>target_path_file} 
 						FileUtils.cp "#{one[:path]}#{one[:ppt]}", target_path_file
 						one[:others].each{|oth|
-							p oth
+							#~ p oth
 							FileUtils.cp "#{one[:path]}#{oth}", "#{target_path}\\#{oth}"
 						} if one[:others]
 					end
