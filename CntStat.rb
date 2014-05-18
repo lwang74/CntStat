@@ -17,7 +17,7 @@ class Total
 					v.each{|k1, v1|
 						@total[k][k1]||=[]
 						v1.each{|one|
-							@total[k][k1] << one.update({:path=>path, :ppt=>others[:ppt], :others=>others[:others]})
+							@total[k][k1] << one.update({:path=>path, :xls=>others[:xls], :ppt=>others[:ppt], :others=>others[:others]})
 						}
 					}
 				}
@@ -27,17 +27,27 @@ class Total
 	end
 	
 	def self.proc_excel excel_file
+		#~ puts excel_file
 		rows={}
 		CExcel.new.open_read(excel_file){|excel, wb|
 			wb.Worksheets.each{|sht|
 				#~ puts sht.name
 				sht.usedrange.value2.each{|row|
 					if row[0]=='学科' and row[1]=='年级' #and row[2]=='课件文件名' and row[3]=='作者'
-					elsif row[0]!=''
-						rows[row[0]] ||={}
-						rows[row[0]][row[1]] ||=[]
-						rows[row[0]][row[1]] <<{:name=>row[2], :auth=>row[3]}
+					elsif row[0] and row[0]!=''
+						if !row[0] or !row[1] or !row[2] or !row[3]
+							puts "!!!error:File:#{excel_file}; Sheet:#{sht.Name}; Content:#{row[0]}-#{row[1]}-#{row[2]}-#{row[3]}"
+						else
+							type=row[0].strip
+							grade=row[1].strip
+							name=row[2].strip
+							auth=row[3].strip
+							rows[type] ||={}
+							rows[type][grade] ||=[]
+							rows[type][grade] <<{:name=>name, :auth=>auth}
+						end
 					else
+						break
 					end
 				} if sht.usedrange.value2
 			}
@@ -64,10 +74,16 @@ class Total
 						FileUtils.cp "#{one[:path]}#{one[:ppt]}", target_path_file
 						one[:others].each{|oth|
 							#~ p oth
-							FileUtils.cp "#{one[:path]}#{oth}", "#{target_path}\\#{oth}"
+							begin
+								FileUtils.cp "#{one[:path]}#{oth}", "#{target_path}\\#{oth}"
+							rescue  Exception => detail
+								p detail
+							end
 						} if one[:others]
 					end
-					arr<<[l1[0], l2[0], name, one[:auth]]
+					
+					auth = {:value=>one[:auth], :hyperlink=>"#{one[:path]}\\#{one[:xls]}"}
+					arr<<[l1[0], l2[0], name, auth]
 				}
 			}
 		}
@@ -89,8 +105,8 @@ def main top_path, target
 				file_name=$2
 				collec[file_path]||={}
 				if file_name =~ /.+\.xlsx?$/i
-					puts one
-					STDOUT.flush
+					#~ puts one
+					#~ STDOUT.flush
 					collec[file_path][:xls] = file_name
 				elsif file_name =~ /.+\.pptx?$/i
 					collec[file_path][:ppt] = file_name
